@@ -1,0 +1,24 @@
+.Entete{
+    background-color: rgb(39, 39, 39);
+    color: white;
+    display: flex;
+    height: 48px;
+    position: relative;
+    font-size: x-large;
+    font-family: Roboto;
+}
+
+.logo{
+    margin: auto;
+    margin-left: 24px;
+}
+
+.avatar{
+    display: flex;
+    margin: auto;
+    margin-right: 12px;
+}
+
+.avatar > div{
+    margin-left: 12px;
+}

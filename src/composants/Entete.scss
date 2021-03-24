@@ -1,24 +1,34 @@
-.Entete{
-    background-color: rgb(39, 39, 39);
-    color: white;
+.Entete {
+  background-color: #000;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  font-size: 1.1em;
+
+  .btn-deconnexion {
+    color: red;
+    background-color: white;
+    font-size: 0.6em;
+    margin-left: 20px;
+
+    &:hover {
+      border: 1px solid red;
+    }
+  }
+
+  &>* {
     display: flex;
-    height: 48px;
-    position: relative;
-    font-size: x-large;
-    font-family: Roboto;
-}
+    padding: 0 20px;
+  }
 
-.logo{
-    margin: auto;
-    margin-left: 24px;
-}
-
-.avatar{
-    display: flex;
-    margin: auto;
-    margin-right: 12px;
-}
-
-.avatar > div{
-    margin-left: 12px;
+  .utilisateur {
+    align-items: center;
+    .avatar {
+      margin-left: 20px;
+      width: 35px;
+      height: 35px;
+    }
+  }
 }

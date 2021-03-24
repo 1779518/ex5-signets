@@ -1,15 +1,64 @@
-import dossTab from '../data/liste-dossiers.json';
-import Dossier from './Dossier';
 import './ListeDossiers.scss';
+import Dossier from './Dossier';
+import { firestore } from '../firebase';
+import { useEffect, useState } from 'react';
 
-export default function ListeDossiers() {
-  return (
-    <ul className="ListeDossiers">
-      {
-        dossTab.map( 
-          dossier =>  <li><Dossier key={dossier.id} {...dossier} /></li>
-        )
+export default function ListeDossiers({utilisateur, etatDossiers}) {
+  // État des dossiers (notez que cet état est défini dans le composant parent "Appli", et passé ici dans les props)
+  const [dossiers, setDossiers] = etatDossiers;
+
+  useEffect(
+    () => {
+      // On crée une fonction asynchrone pour pouvoir utiliser la syntaxe await sur les requêtes asynchrones à Firestore
+      async function chercherDossiers() {
+        // Tableau qui va recevoir nos dossiers de Firestore
+        const tabDossiers = [];
+        // La requête à Firestore utilise 'await' pour retourner la réponse
+        const reponse = await firestore.collection('utilisateurs-ex4').doc(utilisateur.uid).collection('dossiers').get();
+        // On traverse la réponse ...
+        reponse.forEach(
+          // ... et pour chaque doc dans la réponse on ajoute un objet dans tabDossiers
+          doc => {
+            tabDossiers.push({id: doc.id, ...doc.data()})
+          }
+          // Remarquez que le 'id' ne fait pas partie des attributs de données des documents sur Firestore, et il faut l'extraire séparément avec la propriété 'id'. Remarquez aussi l'utilisation de l'opérateur de décomposition (spread operator (...))
+        );
+        // Une fois notre réponse traitée au complet et le tableau tabDossiers renpli avec tous les objets représentants les documents 'dossiers' trouvés, nous pouvons faire la mutation de l'état de la variable 'dossiers' (en utilisant le mutateur setDossiers) pour forcer un 'rerender' (réaffichage) du composant par React
+        setDossiers(tabDossiers);
       }
-    </ul>
+      // Faut pas oublier d'appeler la fonction
+      chercherDossiers();
+    }, []
   );
+
+  console.log(dossiers.length);
+
+  if(dossiers.length < 1)
+  {
+    const couleur = "#"+Math.floor(Math.random()*16777215).toString(16);
+
+    return (
+      <ul className="ListeDossiers">
+        <li><article className="Dossier" style={{backgroundColor: couleur}}>
+              <div className="info">
+              <h2>Votre liste de dossiers est vide</h2>
+              <h1>;-(</h1>
+            </div>    
+          </article>
+        </li>
+      </ul>
+    );
+  }
+  else
+  {
+    return (
+      <ul className="ListeDossiers">
+        {
+          dossiers.map( 
+            dossier =>  <li key={dossier.id}><Dossier {...dossier} /></li>
+          )
+        }
+      </ul>
+    );
+  }
 }

@@ -1,46 +1,51 @@
-.Dossier{
-    background-color: rgb(39, 39, 39);
-    color: white;
-    font-size: large;
-    font-family: Roboto;
-    width: auto;
+.Dossier {
+  position: relative;
+  width: 300px;
+  height: 350px;
+  margin: 10px;
+  color: #fff;
+  cursor: pointer;
 
-    border-radius: 4px;
-    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
-}
+  .couverture {
+    img {
+      width: 300px;
+      height: 200px;
+      object-fit: cover;
+    }
+  }
 
-.deplacer{
+  .deplacer {
     position: absolute;
-    left: 10px;
     top: 10px;
-}
-
-.deplacer > svg{
+    left: 10px;
+    width: 1.4em;
+    height: 1.4em;
     cursor: grab;
-    display: inline-block;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.75);
-    border-radius: 50%;
-    position: relative;
-    width: 32px;
-    height: 32px;
-    padding: 8px;
-    filter: opacity(0.5);
-}
+    background-color: rgba($color: #000000, $alpha: 0.4);
+    color: #ccc;
+    &:hover {
+      background-color: rgba($color: #000000, $alpha: 0.5);
+    }
+  }
 
-.info{
-    margin-left: auto;
-    margin-right: auto;
-    width: 85%;
-}
+  .info {
+    padding: 20px 15px;
+    h2 {
+      margin: 0;
+      padding: 0;
+      font-weight: normal;
+      font-family: Roboto Slab;
+    }
+  }
 
-button{
-    cursor: pointer;
-    border: none;
-    color: white;
-    background-color: Transparent;
-    position: relative;
-    outline: none;
-    left: 88%;
-    top: -20px;
+  .modifier {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: rgba($color: #333, $alpha: 0.1);
+    color: #ccc;
+    &:hover {
+      background-color: rgba($color: #333, $alpha: 0.2);
+    }
+  }
 }

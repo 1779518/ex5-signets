@@ -1,20 +1,15 @@
 import './Accueil.scss';
-import firebase from 'firebase/app';
-import { instanceFirebaseUI } from '../firebase';
-import 'firebaseui/dist/firebaseui.css';
+import * as crudUtilisateurs from '../services/crud-utilisateurs';
 import { useEffect } from 'react';
 
 export default function Accueil() {
-  useEffect(
-    () => instanceFirebaseUI.start("#firebaseui-widget", {
-      signInOptions: [
-        firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-        firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-        firebase.auth.GithubAuthProvider.PROVIDER_ID
-      ],
-      signInFlow: 'popup'
-    }, [])
-  )
+  
+  // Initialiser le widget de connexion FirebaseUI
+  // Remarquez que ce code est dans un useEffect() car on veut l'exécuter 
+  // UNE SEULE FOIS (regardez le tableau des 'deps' - dépendances) et ceci 
+  // APRÈS l'affichage du composant pour que l'élément du DOM dans lequel 
+  // on veut placer le widget de connexion soit bien dans la page
+  useEffect(() => crudUtilisateurs.initUI("#firebaseui-widget"), []);
 
   return (
     <div className="Accueil">

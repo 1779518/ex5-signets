@@ -1,7 +1,7 @@
 import './Entete.scss';
 import { Avatar } from '@material-ui/core'; 
 import Button from '@material-ui/core/Button';
-import firebase from 'firebase/app';
+import * as crudUtilisateurs from '../services/crud-utilisateurs';
 
 export default function Entete({utilisateur}) {
   return (
@@ -12,7 +12,7 @@ export default function Entete({utilisateur}) {
           variant="outlined"
           size="small"
           className="btn-deconnexion"
-          onClick={() => firebase.auth().signOut()}
+          onClick={() => crudUtilisateurs.deconnecter()}
         >
           Déconnexion
         </Button>

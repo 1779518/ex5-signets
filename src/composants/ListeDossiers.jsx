@@ -1,64 +1,53 @@
 import './ListeDossiers.scss';
 import Dossier from './Dossier';
-import { firestore } from '../firebase';
-import { useEffect, useState } from 'react';
+import * as crudDossiers from '../services/crud-dossiers';
+import { useState, useEffect } from 'react';
 
 export default function ListeDossiers({utilisateur, etatDossiers}) {
-  // État des dossiers (notez que cet état est défini dans le composant parent "Appli", et passé ici dans les props)
+  // État des dossiers (vient du composant Appli)
   const [dossiers, setDossiers] = etatDossiers;
 
+  // Lire les dossiers dans Firestore et forcer le réaffichage du composant
+  // Remarquez que ce code est dans un useEffect() car on veut l'exécuter 
+  // UNE SEULE FOIS (regardez le tableau des 'deps' - dépendances) et ceci 
+  // APRÈS l'affichage du composant pour que la requête asynchrone à Firestore  
+  // ait eu le temps d'être complétée et le réaffichage du composant soit
+  // forcé par la mutation de l'état des dossiers
   useEffect(
     () => {
-      // On crée une fonction asynchrone pour pouvoir utiliser la syntaxe await sur les requêtes asynchrones à Firestore
-      async function chercherDossiers() {
-        // Tableau qui va recevoir nos dossiers de Firestore
-        const tabDossiers = [];
-        // La requête à Firestore utilise 'await' pour retourner la réponse
-        const reponse = await firestore.collection('utilisateurs-ex4').doc(utilisateur.uid).collection('dossiers').get();
-        // On traverse la réponse ...
-        reponse.forEach(
-          // ... et pour chaque doc dans la réponse on ajoute un objet dans tabDossiers
-          doc => {
-            tabDossiers.push({id: doc.id, ...doc.data()})
-          }
-          // Remarquez que le 'id' ne fait pas partie des attributs de données des documents sur Firestore, et il faut l'extraire séparément avec la propriété 'id'. Remarquez aussi l'utilisation de l'opérateur de décomposition (spread operator (...))
-        );
-        // Une fois notre réponse traitée au complet et le tableau tabDossiers renpli avec tous les objets représentants les documents 'dossiers' trouvés, nous pouvons faire la mutation de l'état de la variable 'dossiers' (en utilisant le mutateur setDossiers) pour forcer un 'rerender' (réaffichage) du composant par React
-        setDossiers(tabDossiers);
-      }
-      // Faut pas oublier d'appeler la fonction
-      chercherDossiers();
+      crudDossiers.lireTout(utilisateur.uid).then(
+        dossiers => setDossiers(dossiers)
+      )
     }, []
   );
 
-  console.log(dossiers.length);
-
-  if(dossiers.length < 1)
-  {
-    const couleur = "#"+Math.floor(Math.random()*16777215).toString(16);
-
-    return (
-      <ul className="ListeDossiers">
-        <li><article className="Dossier" style={{backgroundColor: couleur}}>
-              <div className="info">
-              <h2>Votre liste de dossiers est vide</h2>
-              <h1>;-(</h1>
-            </div>    
-          </article>
-        </li>
-      </ul>
-    );
+  /**
+   * Gérer le clic du bouton 'supprimer' correspondant au dossier identifié en argument
+   * @param {string} idd identifiant Firestore du dossier
+   */
+  async function gererSupprimer(idd) {
+    // On fait appel à la méthode supprimer de notre code d'interaction avec Firestore
+    crudDossiers.supprimer(utilisateur.uid, idd).then(
+      () => {
+        const tempDossiers = [...dossiers]; // copier le tableau des dossiers existants
+        const dossiersRestants = tempDossiers.filter((elt) => elt.id!==idd); // filtrer pour garder tous les dossiers sauf celui qu'on a demandé de supprimer
+        setDossiers(dossiersRestants); // Muter l'état pour forcer le réaffichage du composant
+      }).catch(erreur => console.log('Échec de la suppression - Firestore a répondu :', erreur.message));
   }
-  else
-  {
-    return (
-      <ul className="ListeDossiers">
-        {
-          dossiers.map( 
-            dossier =>  <li key={dossier.id}><Dossier {...dossier} /></li>
-          )
-        }
-      </ul>
-    );
-  }
+  
+  return (
+    <>
+    <ul className="ListeDossiers">
+      {
+        (dossiers.length > 0) ?
+          dossiers.map(dossier => <li key={dossier.id}><Dossier {...dossier} gererSupprimer={gererSupprimer} /></li>)
+        :
+          <li className="msgAucunDossier">
+            Votre liste de dossiers est vide 
+            <p>;-(</p>
+          </li>
+      }
+    </ul>
+    </>
+  );
 }

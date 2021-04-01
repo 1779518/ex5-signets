@@ -5,80 +5,117 @@ import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
 import Accueil from './Accueil';
 import { useEffect, useState } from 'react';
-import firebase from 'firebase/app';
-import {firestore} from '../firebase';
 import AjouterDossier from './AjouterDossier';
+import * as crudDossiers from '../services/crud-dossiers';
+import * as crudUtilisateurs from '../services/crud-utilisateurs';
+import MenuItem from '@material-ui/core/MenuItem';
+import Select from '@material-ui/core/Select';
+import FormControl from '@material-ui/core/FormControl';
+import InputLabel from '@material-ui/core/InputLabel';
+import { makeStyles } from '@material-ui/core/styles';
 
 export default function Appli() {
-  // État de l'utilisateur
+  //Etat du mode de tri utilisé pour afficher les dossiers
+  const etatTri = useState(['datemodif','desc', 'datemodif']);
+  const [tri, setTri] = etatTri;
+
+  //Éléments pour le menu de sélection de tri
+  const useStyles = makeStyles((theme) => ({
+    formControl: {
+      margin: theme.spacing(1),
+      minWidth: 120,
+    },
+    selectEmpty: {
+      marginTop: theme.spacing(2),
+    }
+  }));
+  const classes = useStyles();
+
+  //Gérer les changements de valeur dans le menu de tri
+  const handleChange = (event) => {
+    let ordre=null;
+    let nom='';
+
+    if(!event.target.value.includes("asc") && !event.target.value.includes("desc")){
+      nom = event.target.value;
+    }
+    else{
+      nom = 'nom';
+      ordre= (event.target.value.includes("asc"))? 'asc' : 'desc';
+    }
+    setTri([nom,ordre,event.target.value]);
+  };
+
+
+  // État de l'utilisateur (pas connecté = null / connecté = objet FB-Auth spécial)
   const [utilisateur, setUtilisateur] = useState(null);
 
-  // État des dossiers
+  // État des dossiers (initial = tableau vide / rempli = tableau contenant les objets récupérés dans Firestore)
   const etatDossiers = useState([]);
   const [dossiers, setDossiers] = etatDossiers;
 
-  // État de la boîte de dialogue "Ajout Dossier"
-  const [ouvert, setOuvert] = useState(false);
+  // État de la boîte de dialogue "Ajout Dossier" (ouverte = true / fermée = false)
+  const [ouvertAD, setOuvertAD] = useState(false);
 
-  // Valider la connexion utilisateur
-  useEffect(
-    () => {
-     firebase.auth().onAuthStateChanged(
-       util => {
-        setUtilisateur(util);
-        // Créer le profil de l'utilisateur dans Firestore si util n'est pas NULL
-        if(util) {
-          firestore.collection('utilisateurs-ex4').doc(util.uid).set({
-            nom: util.displayName, 
-            courriel: util.email, 
-            datecompte: firebase.firestore.FieldValue.serverTimestamp()
-          }, {merge: true});
-        }
-      }
-     );
-    }, []
-  );
+  // Observer le changement d'état de la connexion utilisateur (FB-Auth)
+  // Remarquez que ce code est dans un useEffect() car on veut l'exécuter 
+  // UNE SEULE FOIS (regardez le tableau des 'deps' - dépendances) et ceci 
+  // APRÈS l'affichage du composant
+  useEffect(() => crudUtilisateurs.observerConnexion(setUtilisateur), []);
   
-  // Ajouter un dossier
-  function gererAjout(nom, couverture, couleur) {
-    // Objet à ajouter dans la collection "dossiers" sur Firestore
+  /**
+   * Gérer la soumission du formulaire pour ajouter un nouveau dossier
+   * @param {string} nom nom du dossier
+   * @param {string} couverture adresse URL de l'image de couverture du dossier
+   * @param {string} couleur couleur associée au dossier, en format hexadécimal (avec le dièse #)
+   */
+  function gererAjouter(nom, couverture, couleur) {
+    // Préparer l'bjet à ajouter dans la collection "dossiers" sur Firestore
     const objDossier = {
       nom: nom,
       couverture: couverture,
       couleur: couleur,
-      datemodif: firebase.firestore.FieldValue.serverTimestamp(),
-      signets: []
+      signets: [] // ce tableau n'est pas utilisé en ce moment, mais c'est ici que je voudrais ajouter les "références" aux signets de chaque dossier (à compléter dans une autre vie)
     };
-    // Ajout de l'objet
-    firestore.collection('utilisateurs-ex4').doc(utilisateur.uid).collection('dossiers').add(objDossier).then(
-      refDoc => {
-        // Puis on utilise la référence retournée pour chercher le détail du dossier
-        refDoc.get().then(
-          // Et on modifie l'état des dossiers en joignant ce dernier pour forcer un "rerender" du composant "ListeDossiers"
-          doc => setDossiers([...dossiers, {...doc.data(), id: doc.id}])
-        );
-        // On oublie pas de fermer la boîte de dialogue
-        setOuvert(false);
-      }
-    )
+    // Créer le dossier dans Firestore
+    crudDossiers.creer(utilisateur.uid, objDossier).then(
+      // Modifier l'état des dossiers
+      doc => setDossiers([...dossiers, {...doc.data(), id: doc.id}]) 
+    );
+    // Fermer la boîte de dialogue
+    setOuvertAD(false);
   }
 
   return (
     <div className="Appli">
       {
-        // Un utilisateur est connecté ?
+        // Si un utilisateur est connecté :
         utilisateur ?
           <>
             <Entete utilisateur={utilisateur} />
             <section className="contenu-principal">
-              <ListeDossiers utilisateur={utilisateur} etatDossiers={etatDossiers} />
-              <AjouterDossier ouvert={ouvert} setOuvert={setOuvert} gererAjout={gererAjout} />
-              <Fab onClick={() => setOuvert(true)} className="ajoutRessource" color="primary" aria-label="Ajouter dossier">
+              <FormControl className={classes.formControl + " menuTri"}>
+                <InputLabel shrink id="demo-simple-select-placeholder-label-label">
+                  Tri des dossiers
+                </InputLabel>
+                <Select
+                  value={tri[2]}
+                  onChange={handleChange}
+                  className={classes.selectEmpty}
+                >
+                  <MenuItem value={'datemodif'}>Date de modification descendante</MenuItem>
+                  <MenuItem value={'nom-asc'} >Nom de dossier ascendant</MenuItem>
+                  <MenuItem value={'nom-desc'}>Nom de dossier descendant</MenuItem>
+                </Select>
+              </FormControl>
+              <ListeDossiers utilisateur={utilisateur} etatDossiers={etatDossiers} etatTri={etatTri}/>
+              <AjouterDossier ouvert={ouvertAD} setOuvert={setOuvertAD} gererAjout={gererAjouter} />
+              <Fab onClick={() => setOuvertAD(true)} className="ajoutRessource" color="primary" aria-label="Ajouter dossier">
                 <AddIcon />
               </Fab>
             </section>
           </>
-        // Sinon :
+        // ... et sinon :
         :
           <Accueil />
       }
